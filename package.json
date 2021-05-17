@@ -1,0 +1,21 @@
+{
+  "name": "wx",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "chalk": "^4.1.1",
+    "cheerio": "^1.0.0-rc.9",
+    "qrcode-terminal": "^0.12.0",
+    "superagent": "^6.1.0",
+    "wechaty": "^0.60.10",
+    "wechaty-puppet-wechat": "^0.28.1"
+  }
+}
