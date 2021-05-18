@@ -1,7 +1,13 @@
 const { Wechaty, Friendship } = require('wechaty')
 const qrTerm = require('qrcode-terminal')
-const { initDailySentence } = require('./superAgent')
-const { delay } = require('./utils')
+const {
+  initDailySentence,
+  initWeather
+} = require('./api')
+const {
+  delay,
+  transfer
+} = require('./utils')
 
 const bot = new Wechaty({
   name: 'wx-bot',
@@ -27,7 +33,6 @@ bot
     bot.stop()
     }
 )
-  
 
   function onScan(qrcode, status) {
     qrTerm.generate(qrcode, { small: true })
@@ -73,8 +78,26 @@ bot
 
   // 每日定时任务
   async function initDailyTask() {
-    console.log(`启动每日任务————————————>`);
+    const fileHelper = bot.Contact.load('filehelper')
+    console.log(`启动每日任务 ——>>`);
     // 定时任务： 每日一句
     const ONE = await initDailySentence()
-    console.log('one+++++++++++++', ONE);
+    console.log('no.1 每日一句:', ONE);
+    await fileHelper.say(ONE)
+
+    // 定时任务： 每日天气
+    const WEATHER = await initWeather()
+    const today = WEATHER['newslist'][0]
+    const UVText = transfer(today.uv_index)
+    let weatherMsg = 
+      `${today.date} ${today.week} ${today.area}天气情况：
+      ${today.weather}
+      气温：${today.lowest}~${today.highest}
+      实时气温：${today.real}
+      ${today.wind} ${today.windsc}
+      相对湿度：${today.humidity}%rh
+      紫外线强度：${UVText}
+      温馨提示：${today.tips}`
+    console.log(`no.2 每日天气:`, weatherMsg);
+    await fileHelper.say(weatherMsg)
   }
