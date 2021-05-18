@@ -22,8 +22,8 @@ const initDailySentence = async () => {
         .replace(/(^\s*)|(\s*$)/g, '');
     return daliayData
   } catch (error) {
-    console.log(`每日一句 ——>>`, error);
-    return error
+    let errMsg = `【每日一句】出错——>> ${error}`
+    console.log(errMsg);
   }
 }
 
@@ -40,11 +40,30 @@ const initWeather = async () => {
     })
     return data
   } catch (error) {
-    console.log(`天气出错 ——>>`, error);
+    let errMsg = `【天气】出错——>> ${error}`
+    console.log(errMsg);
+  }
+}
+
+/**
+ * 微信热点话题top10
+ */
+const initWXTopic = async () => {
+  try {
+    const data = await http({
+      method: 'get',
+      url: config.txNewsTopic,
+      params: { key: config.txKey }
+    })
+    return data
+  } catch (error) {
+    let errMsg = `【微信热点话题】出错——>> ${error}`
+    console.log(errMsg);
   }
 }
 
 module.exports = {
   initDailySentence,
-  initWeather
+  initWeather,
+  initWXTopic
 }
