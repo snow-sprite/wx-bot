@@ -1,15 +1,166 @@
-const { Wechaty, Friendship } = require('wechaty')
+const {
+  Wechaty,
+  Friendship} = require('wechaty')
 const qrTerm = require('qrcode-terminal')
+const { machineIdSync } = require('node-machine-id')
+const md5 = require('md5')
 const {
   initDailySentence,
   initWeather,
-  initWXTopic
-} = require('./api')
+  initWXTopic,
+  initTXBot } = require('./api')
+const config = require('./config')
 const {
   delay,
-  transfer
-} = require('./utils')
+  transfer } = require('./utils')
 
+const UNIQUE_ID = md5(machineIdSync())
+let LOGIN_NAME = ''
+
+function onScan(qrcode, status) {
+  qrTerm.generate(qrcode, { small: true })
+}
+async function onLogin(user) {
+  console.log(`${user}已上线`)
+  LOGIN_NAME = user.name()
+  // 每日任务
+  await initDailyTask()
+}
+async function onFriendShip(friendship) {
+  let logMsg
+  const fileHelper = bot.Contact.load('filehelper')
+  
+  try {
+    logMsg = `收到“${friendship.contact().name()}”的好友请求：“${friendship.hello()}”`
+    
+    switch (friendship.type()) {
+      // 1. 新的好友请求
+      case Friendship.Type.Receive:
+        await delay(2000)
+        await friendship.accept()
+        break;
+      // 2. 好友确认
+      case Friendship.Type.Confirm:
+        await delay(2000)
+        logMsg = `“${friendship.contact().name()}”的好友请求已通过！`
+        break;
+    }
+  } catch (error) {
+    logMsg = error.message
+  }
+
+  await fileHelper.say(logMsg)
+}
+async function onMessage(msg) {
+  const contact = msg.talker() // 聊天者
+  const text = msg.text() // 聊天内容
+  const room = msg.room() // 群消息
+  /**
+   * MessageType.Unknown
+   * MessageType.Attachment
+   * MessageType.Audio
+   * MessageType.Contact
+   * MessageType.Emoticon
+   * MessageType.Image
+   * MessageType.Text
+   * MessageType.Video
+   * MessageType.Url
+   */
+  const type = msg.type()
+  if (msg.self()) return
+  // 处理群消息
+  if (room) {
+    try {
+      /**
+       * 解决wechaty群里@ 一直返回false的bug
+       * 相关ISSUSE：https://github.com/wechaty/wechaty/issues/2149
+       */
+      const isMentionSelf = await msg.mentionSelf() // 是否@我了
+      // 只处理@我的内容
+      if (isMentionSelf || text.includes(`@${LOGIN_NAME}`)) {
+        if (config.autoReply) {
+          // 处理消息内容为text的
+          if (type === bot.Message.Type.Text) {
+            // 处理一下消息的body，去掉@user相关内容
+            let replyText = ''
+            let reg = new RegExp(`@${LOGIN_NAME}`, 'ig')
+            replyText = text.replace(reg, '').trim()
+            await delay(2000)
+            let data = await initTXBot(UNIQUE_ID, replyText, 0)
+            let reply = data['newslist'][0].reply
+            // 相当于私聊
+            msg.say(reply)
+          }
+        }
+      }
+    } catch (error) {
+      console.log('message-error', error);
+    }
+  }
+}
+function onLogout(user) {
+  console.log(`${user}已下线`)
+}
+
+// 每日定时任务
+async function initDailyTask() {
+  console.log(`启动每日任务 ——>>`);
+
+  // 定时任务1： 每日一句
+  let SENTENCE = ''
+  try {
+    SENTENCE = await initDailySentence()
+    console.log(`【定时任务1： 每日一句】成功！`);
+  } catch (error) {
+    console.log(`【每日一句】获取失败`, error);
+  }
+  
+  // 定时任务2： 每日天气
+  let WEATHERINFO = ''
+  try {
+    const WEATHER = await initWeather()
+    const today = WEATHER['newslist'][0]
+    const UVText = transfer(today.uv_index)
+    WEATHERINFO = 
+      `${today.date} ${today.week} 📍【${today.area}】
+      ${today.weather}
+      气温：${today.lowest}~${today.highest}
+      实时气温：${today.real}
+      ${today.wind} ${today.windsc}
+      相对湿度：${today.humidity}%rh
+      紫外线强度：${UVText}
+      温馨提示：${today.tips}
+      `
+    console.log(`【定时任务2： 每日天气】成功！`);
+  } catch (error) {
+    console.log(`【每日天气】获取失败`, error);
+  }
+  
+  // 定时任务3： 微信热点话题
+  let NEWS = ''
+  try {
+    const { newslist } = await initWXTopic()
+    newslist.some((n, i) => {
+      NEWS += `${i + 1}. ${n.word}\n\t`
+    })
+    console.log(`【定时任务3： 微信热点话题】成功！`);
+  } catch (error) {
+    console.log(`【微信热点话题】获取失败`, error);
+  }
+
+  const message =
+  `
+  =======================
+  【每日一句】🌈🌈🌈${SENTENCE}🦄🦄🦄
+
+  【今日天气】${WEATHERINFO}
+  【热点话题】
+  ${NEWS}
+  =======================
+  `
+  
+}
+  
 const bot = new Wechaty({
   name: 'wx-bot',
   puppet: 'wechaty-puppet-wechat',
@@ -34,91 +185,3 @@ bot
     bot.stop()
     }
 )
-
-  function onScan(qrcode, status) {
-    qrTerm.generate(qrcode, { small: true })
-  }
-  async function onLogin(user) {
-    console.log(`${user}已上线`)
-
-    // 每日任务
-    await initDailyTask()
-  }
-  async function onFriendShip(friendship) {
-    let logMsg
-    const fileHelper = bot.Contact.load('filehelper')
-    
-    try {
-      logMsg = `收到“${friendship.contact().name()}”的好友请求：“${friendship.hello()}”`
-      
-      switch (friendship.type()) {
-        // 1. 新的好友请求
-        case Friendship.Type.Receive:
-          await delay(2000)
-          await friendship.accept()
-          break;
-        // 2. 好友确认
-        case Friendship.Type.Confirm:
-          await delay(2000)
-          logMsg = `“${friendship.contact().name()}”的好友请求已通过！`
-          break;
-      }
-    } catch (error) {
-      logMsg = error.message
-    }
-
-    await fileHelper.say(logMsg)
-  }
-  async function onMessage(msg) {
-    // TODO
-  }
-  function onLogout(user) {
-    console.log(`${user}已下线`)
-  }
-
-  // 每日定时任务
-  async function initDailyTask() {
-    const fileHelper = bot.Contact.load('filehelper')
-    console.log(`启动每日任务 ——>>`);
-
-    // 定时任务1： 每日一句
-    const SENTENCE = await initDailySentence()
-    console.log(`【定时任务1： 每日一句】成功！`);
-
-    // 定时任务2： 每日天气
-    const WEATHER = await initWeather()
-    const today = WEATHER['newslist'][0]
-    const UVText = transfer(today.uv_index)
-    const WEATHERINFO = 
-      `${today.date} ${today.week} 📍【${today.area}】
-      ${today.weather}
-      气温：${today.lowest}~${today.highest}
-      实时气温：${today.real}
-      ${today.wind} ${today.windsc}
-      相对湿度：${today.humidity}%rh
-      紫外线强度：${UVText}
-      温馨提示：${today.tips}
-      `
-    console.log(`【定时任务2： 每日天气】成功！`);
-    
-    // 定时任务3： 微信热点话题
-    const { newslist } = await initWXTopic()
-    let NEWS = ''
-    newslist.some((n, i) => {
-      NEWS += `${i + 1}. ${n.word}\n\t`
-    })
-    console.log(`【定时任务3： 微信热点话题】成功！`);
-
-    const message =
-    `
-    =======================
-    【今日心情】🌈🌈🌈${SENTENCE}🦄🦄🦄
-
-    【今日天气】${WEATHERINFO}
-    【热点话题】
-    ${NEWS}
-    =======================
-    `
-    console.log(`message -> ${message}`);
-    await fileHelper.say(message)
-  }
