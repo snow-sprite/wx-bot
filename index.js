@@ -13,9 +13,12 @@ const config = require('./config')
 const {
   delay,
   transfer } = require('./utils')
+const schedule = require('./utils/schedule')
 
 const UNIQUE_ID = md5(machineIdSync())
 let LOGIN_NAME = ''
+// 转发锁
+let isBlock = false
 
 function onScan(qrcode, status) {
   qrTerm.generate(qrcode, { small: true })
@@ -24,7 +27,8 @@ async function onLogin(user) {
   console.log(`${user}已上线`)
   LOGIN_NAME = user.name()
   // 每日任务
-  await initDailyTask()
+  console.log(`每日任务已启动>>------>>`);
+  schedule.setSchedule(config.timing, initDailyTask)
 }
 async function onFriendShip(friendship) {
   let logMsg
@@ -67,7 +71,16 @@ async function onMessage(msg) {
    * MessageType.Url
    */
   const type = msg.type()
+  // 每日任务从fileHelper转发到群消息
+  if (text.includes(`=======================`)) {
+    const specialRoom = await bot.Room.find({ topic: config.topic })
+    if (specialRoom && !isBlock) {
+      isBlock = true
+      msg.forward(specialRoom)
+    }
+  }
   if (msg.self()) return
+
   // 处理群消息
   if (room) {
     try {
@@ -88,7 +101,9 @@ async function onMessage(msg) {
             await delay(2000)
             let data = await initTXBot(UNIQUE_ID, replyText, 0)
             let reply = data['newslist'][0].reply
-            // 相当于私聊
+            // 私聊
+            // contact.say(reply)
+            // 群聊
             msg.say(reply)
           }
         }
@@ -104,8 +119,9 @@ function onLogout(user) {
 
 // 每日定时任务
 async function initDailyTask() {
-  console.log(`启动每日任务 ——>>`);
-
+  // 关闭转发锁
+  isBlock = false
+  const fileHelper = bot.Contact.load('filehelper')
   // 定时任务1： 每日一句
   let SENTENCE = ''
   try {
@@ -147,18 +163,18 @@ async function initDailyTask() {
   } catch (error) {
     console.log(`【微信热点话题】获取失败`, error);
   }
-
+  // 【每日一句】🌈🌈🌈${SENTENCE}🦄🦄🦄
   const message =
   `
   =======================
-  【每日一句】🌈🌈🌈${SENTENCE}🦄🦄🦄
+  【每日一句】${SENTENCE}
 
   【今日天气】${WEATHERINFO}
   【热点话题】
   ${NEWS}
   =======================
   `
-  
+  fileHelper.say(`${message}`)
 }
   
 const bot = new Wechaty({
