@@ -33,3 +33,8 @@ $ npm i
 $ export WECHATY_PUPPET=wechaty-puppet-wechat // 关键，需要配置你使用的puppet
 $ npm start
 ```
+#### sh
+如果项目跑不起来，可以尝试`sh reset.sh`删除依赖以后执行`npm start`重新运行项目
+
+#### bug
+目前【群】转发【每日消息】没问题，但是【好友】转发时，使用`await bot.Contact.find({ alias })`和`await bot.Contact.find({ name })`返回都是`null`获取不到【好友】信息，待解决。

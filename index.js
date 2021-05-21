@@ -11,14 +11,20 @@ const {
   initTXBot } = require('./api')
 const config = require('./config')
 const {
-  delay,
+  sleep,
   transfer } = require('./utils')
 const schedule = require('./utils/schedule')
 
 const UNIQUE_ID = md5(machineIdSync())
 let LOGIN_NAME = ''
-// 转发锁
-let isBlock = false
+// 待转发的群
+var forwardRooms = []
+// 待转发的好友
+var forwardFriends = []
+// 【群】转发锁
+let isRoomBlock = false
+// 【好友】转发锁
+let isFriendBlock = false
 
 function onScan(qrcode, status) {
   qrTerm.generate(qrcode, { small: true })
@@ -26,6 +32,19 @@ function onScan(qrcode, status) {
 async function onLogin(user) {
   console.log(`${user}已上线`)
   LOGIN_NAME = user.name()
+  // 待转发内容的【群】，由于是异步事件，这里先提前获取
+  config.topics.forEach(async topic => {
+    let tempRoom = await bot.Room.find({ topic })
+    forwardRooms.push(tempRoom)
+  })
+  // 待转发内容的【好友】，由于是异步事件，这里先提前获取
+  config.friends.forEach(async ({ alias, name }) => {
+    // https://github.com/wechaty/wechaty/issues/1689
+    await sleep(2000)
+    const tempFriend = (await bot.Contact.find({ alias }))
+      || (await bot.Contact.find({ name }))
+    forwardFriends.push(tempFriend)
+  })
   // 每日任务
   console.log(`每日任务已启动>>------>>`);
   schedule.setSchedule(config.timing, initDailyTask)
@@ -40,12 +59,12 @@ async function onFriendShip(friendship) {
     switch (friendship.type()) {
       // 1. 新的好友请求
       case Friendship.Type.Receive:
-        await delay(2000)
+        await sleep(2000)
         await friendship.accept()
         break;
       // 2. 好友确认
       case Friendship.Type.Confirm:
-        await delay(2000)
+        await sleep(2000)
         logMsg = `“${friendship.contact().name()}”的好友请求已通过！`
         break;
     }
@@ -71,12 +90,20 @@ async function onMessage(msg) {
    * MessageType.Url
    */
   const type = msg.type()
+
   // 每日任务从fileHelper转发到群消息
   if (text.includes(`=======================`)) {
-    const specialRoom = await bot.Room.find({ topic: config.topic })
-    if (specialRoom && !isBlock) {
-      isBlock = true
-      msg.forward(specialRoom)
+    if (forwardRooms && forwardRooms.length > 0 && !isRoomBlock) {
+      forwardRooms.forEach(room => {
+        msg.forward(room)
+        isRoomBlock = true
+      })
+    }
+    if (forwardFriends && forwardFriends.length > 0 && !isFriendBlock) {
+      forwardFriends.forEach(friend => {
+        msg.forward(friend)
+        isFriendBlock = true
+      })
     }
   }
   if (msg.self()) return
@@ -85,7 +112,7 @@ async function onMessage(msg) {
   if (room) {
     try {
       /**
-       * 解决wechaty群里@ 一直返回false的bug
+       * 解决wechaty群里@我 一直返回false的bug
        * 相关ISSUSE：https://github.com/wechaty/wechaty/issues/2149
        */
       const isMentionSelf = await msg.mentionSelf() // 是否@我了
@@ -98,7 +125,7 @@ async function onMessage(msg) {
             let replyText = ''
             let reg = new RegExp(`@${LOGIN_NAME}`, 'ig')
             replyText = text.replace(reg, '').trim()
-            await delay(2000)
+            await sleep(2000)
             let data = await initTXBot(UNIQUE_ID, replyText, 0)
             let reply = data['newslist'][0].reply
             // 私聊
@@ -119,8 +146,10 @@ function onLogout(user) {
 
 // 每日定时任务
 async function initDailyTask() {
-  // 关闭转发锁
-  isBlock = false
+  // 关闭多个【群】发转发锁
+  isRoomBlock = false
+  // 关闭多个【好友】转发锁
+  isFriendBlock = false
   const fileHelper = bot.Contact.load('filehelper')
   // 定时任务1： 每日一句
   let SENTENCE = ''
@@ -133,24 +162,24 @@ async function initDailyTask() {
   
   // 定时任务2： 每日天气
   let WEATHERINFO = ''
-  try {
-    const WEATHER = await initWeather()
-    const today = WEATHER['newslist'][0]
-    const UVText = transfer(today.uv_index)
-    WEATHERINFO = 
-      `${today.date} ${today.week} 📍【${today.area}】
-      ${today.weather}
-      气温：${today.lowest}~${today.highest}
-      实时气温：${today.real}
-      ${today.wind} ${today.windsc}
-      相对湿度：${today.humidity}%rh
-      紫外线强度：${UVText}
-      温馨提示：${today.tips}
-      `
-    console.log(`【定时任务2： 每日天气】成功！`);
-  } catch (error) {
-    console.log(`【每日天气】获取失败`, error);
-  }
+  // try {
+  //   const WEATHER = await initWeather()
+  //   const today = WEATHER['newslist'][0]
+  //   const UVText = transfer(today.uv_index)
+  //   WEATHERINFO = 
+  //     `${today.date} ${today.week} 📍【${today.area}】
+  //     ${today.weather}
+  //     气温：${today.lowest}~${today.highest}
+  //     实时气温：${today.real}
+  //     ${today.wind} ${today.windsc}
+  //     相对湿度：${today.humidity}%rh
+  //     紫外线强度：${UVText}
+  //     温馨提示：${today.tips}
+  //     `
+  //   console.log(`【定时任务2： 每日天气】成功！`);
+  // } catch (error) {
+  //   console.log(`【每日天气】获取失败`, error);
+  // }
   
   // 定时任务3： 微信热点话题
   let NEWS = ''

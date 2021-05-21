@@ -8,7 +8,10 @@ module.exports = {
   autoReply: true, // 是否开启机器人的自动回复
 
   // 每日消息转发相关
-  topic: '测试群', // 待转发群名,
+  topics: ['测试群1', '测试群2'], // 待转发群名列表
+  friends: [
+    { alias: 'Cid', name: 'Cid' },
+  ], // 待转发好友列表, alias:备注，name:昵称
   /**
    * 定时转发时间
    * 示例事件为每日早7点
@@ -23,5 +26,6 @@ module.exports = {
     │    └──────────────────── minute (0 - 59)
     └───────────────────────── second (0 - 59, OPTIONAL)
   */
-  timing: '0 0 7 * * *',
+  // timing: '0 0 7 * * *',
+  timing: '0 * * * * *'
 }

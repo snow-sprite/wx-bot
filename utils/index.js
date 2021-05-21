@@ -1,5 +1,5 @@
 // 延时执行
-const delay = ms => new Promise(resolve => setTimeout(resolve(), ms))
+const sleep = ms => new Promise(resolve => setTimeout(resolve(), ms))
 
 // 根据输入数值输出对应数值（0~10）‘强’ ‘中’ ‘弱’
 const transfer = number => {
@@ -13,6 +13,6 @@ const transfer = number => {
 }
 
 module.exports = {
-  delay,
+  sleep,
   transfer
 }

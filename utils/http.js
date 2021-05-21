@@ -23,6 +23,8 @@ function http({ method, url, params, data, cookie, spider=false, platform='tx'})
         } else {
           // 天行api相关
           if (platform == 'tx' && res.status === 200) resolve(JSON.parse(res.text))
+          // 其他
+          // TODO
         }
       })
   })
