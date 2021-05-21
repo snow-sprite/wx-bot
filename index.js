@@ -162,24 +162,24 @@ async function initDailyTask() {
   
   // 定时任务2： 每日天气
   let WEATHERINFO = ''
-  // try {
-  //   const WEATHER = await initWeather()
-  //   const today = WEATHER['newslist'][0]
-  //   const UVText = transfer(today.uv_index)
-  //   WEATHERINFO = 
-  //     `${today.date} ${today.week} 📍【${today.area}】
-  //     ${today.weather}
-  //     气温：${today.lowest}~${today.highest}
-  //     实时气温：${today.real}
-  //     ${today.wind} ${today.windsc}
-  //     相对湿度：${today.humidity}%rh
-  //     紫外线强度：${UVText}
-  //     温馨提示：${today.tips}
-  //     `
-  //   console.log(`【定时任务2： 每日天气】成功！`);
-  // } catch (error) {
-  //   console.log(`【每日天气】获取失败`, error);
-  // }
+  try {
+    const WEATHER = await initWeather()
+    const today = WEATHER['newslist'][0]
+    const UVText = transfer(today.uv_index)
+    WEATHERINFO = 
+      `${today.date} ${today.week} 📍【${today.area}】
+      ${today.weather}
+      气温：${today.lowest}~${today.highest}
+      实时气温：${today.real}
+      ${today.wind} ${today.windsc}
+      相对湿度：${today.humidity}%rh
+      紫外线强度：${UVText}
+      温馨提示：${today.tips}
+      `
+    console.log(`【定时任务2： 每日天气】成功！`);
+  } catch (error) {
+    console.log(`【每日天气】获取失败`, error);
+  }
   
   // 定时任务3： 微信热点话题
   let NEWS = ''
