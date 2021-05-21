@@ -26,6 +26,5 @@ module.exports = {
     │    └──────────────────── minute (0 - 59)
     └───────────────────────── second (0 - 59, OPTIONAL)
   */
-  // timing: '0 0 7 * * *',
-  timing: '0 * * * * *'
+  timing: '0 0 7 * * *',
 }
