@@ -38,16 +38,33 @@ async function onLogin(user) {
     forwardRooms.push(tempRoom)
   })
   // 待转发内容的【好友】，由于是异步事件，这里先提前获取
-  config.friends.forEach(async ({ alias, name }) => {
-    // https://github.com/wechaty/wechaty/issues/1689
-    await sleep(2000)
-    const tempFriend = (await bot.Contact.find({ alias }))
-      || (await bot.Contact.find({ name }))
-    forwardFriends.push(tempFriend)
-  })
+  if (!config.isForwadAll) {
+    config.friends.forEach(async ({ alias, name }) => {
+      // https://github.com/wechaty/wechaty/issues/1689
+      await sleep(2000)
+      const tempFriend = (await bot.Contact.find({ alias }))
+        || (await bot.Contact.find({ name }))
+      forwardFriends.push(tempFriend)
+    })
+  }
+  
   // 每日任务
   console.log(`每日任务已启动>>------>>`);
   schedule.setSchedule(config.timing, initDailyTask)
+}
+async function onReady() {
+  if (config.isForwadAll) {
+    // https://github.com/wechaty/wechaty/issues/1594
+    // 群发
+    let contactList = await bot.Contact.findAll()
+    // 过滤掉【公众号】
+    contactList = contactList.filter(friend => friend.payload.type !== 2)
+    contactList.forEach(async (friend) => {
+      // https://github.com/wechaty/wechaty/issues/1689
+      await sleep(2000)
+      forwardFriends.push(friend)
+    })
+  }
 }
 async function onFriendShip(friendship) {
   let logMsg
@@ -223,6 +240,7 @@ const bot = new Wechaty({
 bot
   .on('scan', onScan)
   .on('login', onLogin)
+  .on('ready', onReady)
   .on('friendship', onFriendShip)
   .on('message', onMessage)
   .on('logout', onLogout)

@@ -12,6 +12,7 @@ module.exports = {
   friends: [
     { alias: 'Cid', name: 'Cid' },
   ], // 待转发好友列表, alias:备注，name:昵称，若不转发则为空[]即可
+  isForwadAll: false, // 是否群发，若为true则上面的配置[friends]不再生效 
   /**
    * 定时转发时间
    * 示例事件为每日早7点
