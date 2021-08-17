@@ -39,4 +39,3 @@ $ npm start
 
 #### bug
 - 经测试，发送群消息时，由于群不够活跃或者删除了群（未保存到通讯录）会导致群消息发送失败。（暂时解决办法：一个人随便在群里发一点内容就行了）
-- 由于环境原因，`await bot.Contact.find({ alias })`和`await bot.Contact.find({ name })`返回可能是`null`获取不到待转发信息的【好友】信息。
