@@ -39,3 +39,9 @@ $ npm start
 
 #### bug
 - 经测试，发送群消息时，由于群不够活跃或者删除了群（未保存到通讯录）会导致群消息发送失败。（暂时解决办法：一个人随便在群里发一点内容就行了）
+
+#### Donate
+> If you find this project useful, you can buy author a glass of ~~tea~~ ~~coffee~~ juice.
+
+<span><img align="center" alt="WeChat" title="WeChat" src="https://raw.githubusercontent.com/snow-sprite/picGoPublic/master/github-imgs/alipay.jpeg" /></span>
+<span><img align="center" alt="Alipay" title="Alipay" src="![](https://raw.githubusercontent.com/snow-sprite/picGoPublic/master/github-imgs/wechat.png)" /></span>
