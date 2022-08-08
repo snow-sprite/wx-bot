@@ -43,5 +43,5 @@ $ npm start
 #### Donate
 > If you find this project useful, you can buy author a glass of ~~tea~~ ~~coffee~~ juice.
 
-<span><img align="center" alt="WeChat" title="WeChat" src="https://raw.githubusercontent.com/snow-sprite/picGoPublic/master/github-imgs/alipay.jpeg" /></span>
-<span><img align="center" alt="Alipay" title="Alipay" src="![](https://raw.githubusercontent.com/snow-sprite/picGoPublic/master/github-imgs/wechat.png)" /></span>
+<span><img align="center" alt="WeChat" title="WeChat" src="https://raw.githubusercontent.com/snow-sprite/picGoPublic/master/github-imgs/wechat.png" width="300px" height="300px" /></span>
+<span><img align="center" alt="Alipay" title="Alipay" src="https://raw.githubusercontent.com/snow-sprite/picGoPublic/master/github-imgs/alipay.png" width="300px" height="300px" /></span>
