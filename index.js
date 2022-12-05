@@ -1,6 +1,4 @@
-const {
-  Wechaty,
-  Friendship} = require('wechaty')
+const { WechatyBuilder } = require('wechaty')
 const qrTerm = require('qrcode-terminal')
 const { machineIdSync } = require('node-machine-id')
 const md5 = require('md5')
@@ -27,7 +25,12 @@ let isRoomBlock = false
 let isFriendBlock = false
 
 function onScan(qrcode, status) {
-  qrTerm.generate(qrcode, { small: true })
+  qrTerm.generate(qrcode, { small: true });
+  const qrcodeImageUrl = [
+    'https://wechaty.js.org/qrcode/',
+    encodeURIComponent(qrcode),
+  ].join('');
+  console.log(qrcodeImageUrl);
 }
 async function onLogin(user) {
   console.log(`${user}已上线`)
@@ -37,16 +40,17 @@ async function onLogin(user) {
     let tempRoom = await bot.Room.find({ topic })
     forwardRooms.push(tempRoom)
   })
+  // TODO .find方法无法获取到有效好友，暂时先注释了
   // 待转发内容的【好友】，由于是异步事件，这里先提前获取
-  if (!config.isForwadAll) {
-    config.friends.forEach(async ({ alias, name }) => {
-      // https://github.com/wechaty/wechaty/issues/1689
-      await sleep(2000)
-      const tempFriend = (await bot.Contact.find({ alias }))
-        || (await bot.Contact.find({ name }))
-      forwardFriends.push(tempFriend)
-    })
-  }
+  // if (!config.isForwadAll) {
+  //   config.friends.forEach(async ({ alias, name }) => {
+  //     // https://github.com/wechaty/wechaty/issues/1689
+  //     await sleep(15000)
+  //     const tempFriend = (await bot.Contact.find({ alias }))
+  //       || (await bot.Contact.find({ name }))
+  //     forwardFriends.push(tempFriend)
+  //   })
+  // }
   
   // 每日任务
   console.log(`每日任务已启动>>------>>`);
@@ -75,12 +79,12 @@ async function onFriendShip(friendship) {
     
     switch (friendship.type()) {
       // 1. 新的好友请求
-      case Friendship.Type.Receive:
+      case bot.Friendship.Type.Receive:
         await sleep(2000)
         await friendship.accept()
         break;
       // 2. 好友确认
-      case Friendship.Type.Confirm:
+      case bot.Friendship.Type.Confirm:
         await sleep(2000)
         logMsg = `“${friendship.contact().name()}”的好友请求已通过！`
         break;
@@ -222,19 +226,23 @@ async function initDailyTask() {
   const message =
   `
   =======================
-  【每日一句】${SENTENCE}
+  【每日一句🦄】${SENTENCE}
 
-  【今日天气】${WEATHERINFO}
-  【热点话题】
+  【今日天气🌈】${WEATHERINFO}
+  【热点话题💭】
   ${NEWS}
   =======================
   `
   fileHelper.say(`${message}`)
 }
   
-const bot = new Wechaty({
+const bot = WechatyBuilder.build({
   name: 'wx-bot',
   puppet: 'wechaty-puppet-wechat',
+  puppetOptions: {
+    // endpoint: '<executablePath>',
+    uos: true
+  }
 })
 
 bot
